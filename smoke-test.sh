@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Smoke test of a built attack box image: started the way the launcher starts it
-# (src-tauri/src/runtime/exegol.rs: `docker run -d --init --cap-add NET_ADMIN <image> sleep infinity`),
+# (`docker run -d --init --cap-add NET_ADMIN <image> sleep infinity`),
 # then what the launcher and the player rely on from inside it.
-# Usage: images/attack-box/smoke-test.sh <image>
+# Usage: ./smoke-test.sh <image>
 set -euo pipefail
 
 image=${1:?usage: smoke-test.sh <image>}
 name=attack-box-smoke-$$
-# The account the launcher's shell opens as (src-tauri `attack_box::PLAYER`).
+# The account the launcher's shell opens as (the README's contract).
 player=player
 
 cleanup() { docker rm -f "$name" >/dev/null 2>&1 || true; }
@@ -37,7 +37,7 @@ done
 # NET_ADMIN is granted so the player can change routes and interfaces.
 docker exec "$name" ip link set lo mtu 65535 || fail "cannot change interfaces with NET_ADMIN"
 
-# The bashrc keeps one stable terminal title (images/attack-box/bashrc.cyberctf).
+# The bashrc keeps one stable terminal title (bashrc.cyberctf).
 title=$(docker exec "$name" bash -ic 'printf %s "$PROMPT_COMMAND"' 2>/dev/null)
 case "$title" in
   *"Cyber CTF attack box"*) ;;

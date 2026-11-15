@@ -1,0 +1,6 @@
+# The image takes its own files only.
+.git
+.github
+vm
+README.md
+LICENSE

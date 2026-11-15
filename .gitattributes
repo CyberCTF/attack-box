@@ -1,0 +1,2 @@
+# LF everywhere: the scripts run in Linux images and VMs, whatever core.autocrlf says.
+* text=auto eol=lf

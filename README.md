@@ -32,11 +32,12 @@ The launcher assembles one `sh` script from these parts, in this order:
 ## Building and testing
 
 ```sh
-docker build --pull -t attack-box:local .
-./smoke-test.sh attack-box:local
+./check.sh            # the scripts: the VM set-up's compositions parse, shellcheck
+./check.sh image      # the image built locally and smoke-tested
+./check.sh all        # both
 ```
 
-The workflow builds and smoke-tests every pull request on amd64 and arm64; a push to `main`, the
+The workflow runs the same command: it checks the scripts, and builds and smoke-tests every pull request on amd64 and arm64; a push to `main`, the
 weekly run or a manual run publishes, only once both pass, then pulls the published digest and
 smoke-tests it again before pinning it in the launcher.
 

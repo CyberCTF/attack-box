@@ -33,18 +33,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # The VM set-up's parts are fragments of one script (vm/kali.sh defines `$keep`): each
-      # composition the launcher makes must parse, with the player's account between the toolset
-      # and the desktop.
-      - name: The VM set-up parses
-        run: |
-          set -euo pipefail
-          for parts in "vm/kali.sh vm/toolset.sh" "vm/kali.sh vm/toolset.sh vm/desktop.sh" "vm/kali.sh vm/desktop.sh"; do
-            # shellcheck disable=SC2086
-            { cat $parts; } | sh -n
-          done
-      - name: shellcheck
-        run: shellcheck player-account.sh smoke-test.sh
+      # The VM set-up's compositions parse, and shellcheck (check.sh, as a contributor runs it).
+      - run: ./check.sh scripts
 
   smoke:
     strategy:
@@ -61,11 +51,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The image is large (~14 GB unpacked): Docker keeps its data on the runner's scratch disk.
       - uses: ./.github/actions/scratch-disk-docker
-      # No registry, no secrets: a plain local build, so pull requests from forks run it too.
-      - name: Build
-        run: docker build --pull -t attack-box:smoke .
-      - name: Smoke test
-        run: ./smoke-test.sh attack-box:smoke
+      # No registry, no secrets: a plain local build and its smoke test (check.sh), so pull
+      # requests from forks run it too.
+      - run: ./check.sh image
 
   build:
     needs: [scripts, smoke]

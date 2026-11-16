@@ -8,7 +8,9 @@ name: Attack box image
 # never reaches players. The launcher doesn't follow `latest`: it pins the image by digest, with
 # this repository's files as they were at the commit that published it. Once a publish is out, the
 # pushed digest is pulled and smoke-tested again on both architectures, then the `pin` job opens a
-# pull request into the launcher's dev with both.
+# pull request into the launcher's dev with both. Each architecture's image carries BuildKit's SBOM
+# and provenance attestations, and the published index a GitHub build provenance attestation
+# (README.md, "Verify the image").
 on:
   pull_request:
   push:
@@ -81,6 +83,10 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          # BuildKit's attestations, pushed with the image: an SPDX SBOM of its packages and the
+          # full SLSA provenance of its build (the repository has no build secrets to leak).
+          sbom: true
+          provenance: mode=max
       - run: |
           set -euo pipefail
           mkdir -p /tmp/digests
@@ -96,6 +102,10 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # sign the provenance attestation (Sigstore, keyless)
+      attestations: write
     outputs:
       digest: ${{ steps.digest.outputs.digest }}
     steps:
@@ -127,6 +137,13 @@ jobs:
           [[ $digest =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::unexpected digest '$digest'"; exit 1; }
           echo "Published $IMAGE@$digest"
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      # The published index's build provenance, signed through Sigstore, kept by GitHub and pushed
+      # to Docker Hub beside the image: `gh attestation verify oci://...`.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: index.docker.io/${{ env.IMAGE }}
+          subject-digest: ${{ steps.digest.outputs.digest }}
+          push-to-registry: true
 
   # The pushed image itself, by digest, on both architectures: the smoke job tested a local build.
   verify:

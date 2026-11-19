@@ -95,6 +95,16 @@ for want in "install -y \$keep kali-desktop-xfce lightdm" "autologin-user=player
   "off xfce4-session /shutdown/LockScreen" "/etc/xdg/autostart/cyberctf-no-screen-lock.desktop" "/home/player/.config/autostart"; do
   contains "$desktop" "$want" || fail "desktop.sh: $want"
 done
+# --- nothing accepted on the player's behalf ---------------------------------------------------
+# No switch that accepts a licence, an agreement or terms for the player (comments aside): where a
+# vendor asks, its own window shows it and the player accepts it there. Moved from the launcher's
+# consent scan (src-tauri/src/testing/source_scan/consent.rs).
+accepts='--accept-license|--accept-licence|--accept-package-agreements|--accept-source-agreements|--accept-eula|--accept-terms|--agree-tos|-license accept|accepted-license|license select true|accept_eula|accepteula|/eula'
+for f in player-account.sh vm/*.sh Dockerfile bashrc.cyberctf; do
+  found="$(grep -vE '^[[:space:]]*#' "$f" | grep -inE -e "$accepts" || true)"
+  if [ -n "$found" ]; then fail "$f accepts for the player: $found"; fi
+done
+
 if [ "$failed" = 0 ]; then ok "the scripts behave as the launcher relies on"; fi
 
 exit "$failed"

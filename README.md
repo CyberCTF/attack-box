@@ -25,9 +25,13 @@ The launcher assembles one `sh` script from these parts, in this order:
 
 - The account is `player` (`ARG PLAYER=player`), with a home, passwordless sudo and a password of
   the box's own; the launcher opens its shell as that account. `smoke-test.sh` checks it.
-- The launcher pins this repository's output: the image by its digest, and these files as they
-  were at the commit that published it. A publish opens a pull request into the launcher's `dev`
-  with both (`.github/workflows/image.yml`, its `pin` job).
+- The launcher pins this repository's output in its `src-tauri/attack-box.json`: the image by its
+  digest, the commit that published it, and each script's SHA-256 there. It keeps no copy of the
+  scripts: it downloads them at that commit and refuses one whose hash differs. A publish opens a
+  pull request into the launcher's `dev` with the new pin (`.github/workflows/image.yml`, its `pin`
+  job).
+- The scripts' behaviour is tested here (`tests/scripts.sh`, run by `./check.sh`); the launcher
+  tests only how it puts them together.
 
 ## Building and testing
 

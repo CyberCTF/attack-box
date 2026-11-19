@@ -174,7 +174,7 @@ jobs:
     timeout-minutes: 15
     env:
       LAUNCHER: Cyber-Courses/Cyber-CTF-Launcher
-      DIR: src-tauri/attack-box
+      PIN: src-tauri/attack-box.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -192,22 +192,25 @@ jobs:
           PINNED: ${{ env.IMAGE }}@${{ needs.publish.outputs.digest }}
         run: |
           set -euo pipefail
-          file="$DIR/image.json"
-          if [ "$(jq -er .image "$file")" = "$PINNED" ]; then
-            echo "The launcher already pins $PINNED"
+          if [ "$(jq -er .image "$PIN")" = "$PINNED" ] && [ "$(jq -er .commit "$PIN")" = "$GITHUB_SHA" ]; then
+            echo "The launcher already pins $PINNED with the files at $GITHUB_SHA"
             exit 0
           fi
-          # The old pin joins `previous`, so a player's saved old default moves to the new one.
-          jq --arg new "$PINNED" '.previous = ([.image] + .previous | map(select(. != $new)) | unique) | .image = $new' "$file" > "$RUNNER_TEMP/image.json"
-          mv "$RUNNER_TEMP/image.json" "$file"
-          cp ../attack-box/player-account.sh "$DIR/player-account.sh"
-          mkdir -p "$DIR/vm"
-          cp ../attack-box/vm/kali.sh ../attack-box/vm/toolset.sh ../attack-box/vm/desktop.sh "$DIR/vm/"
+          # The launcher keeps no copy of the scripts: it downloads them at this commit and checks
+          # each against its SHA-256 here.
+          files="$(cd ../attack-box && for f in player-account.sh vm/kali.sh vm/toolset.sh vm/desktop.sh; do
+            printf '%s\t%s\n' "$f" "$(sha256sum "$f" | cut -d' ' -f1)"; done | jq -Rn '[inputs | split("\t") | {(.[0]): .[1]}] | add')"
+          # An image that changed: the old one joins `previous`, so a player's saved old default
+          # moves to the new one.
+          jq --arg new "$PINNED" --arg commit "$GITHUB_SHA" --argjson files "$files" \
+            '(if .image != $new then .previous = ([.image] + .previous | map(select(. != $new)) | unique) else . end)
+             | .image = $new | .commit = $commit | .files = $files' "$PIN" > "$RUNNER_TEMP/attack-box.json"
+          mv "$RUNNER_TEMP/attack-box.json" "$PIN"
           branch="attack-box-pin-${PINNED: -12}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -q -b "$branch"
-          git add "$DIR"
+          git add "$PIN"
           git commit -qm "Attack box: pin ${PINNED#*@}" -m "Published and smoke-tested on amd64 and arm64 by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID, with the attack box's files at $GITHUB_SHA."
           git push -q origin "$branch"
           gh pr create --repo "$LAUNCHER" --base dev --head "$branch" \

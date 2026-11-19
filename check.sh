@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The attack box's check, the command CI runs (.github/workflows/image.yml) and a contributor runs:
 #
-#   ./check.sh            the scripts: the VM set-up's compositions parse, shellcheck passes
+#   ./check.sh            the scripts: the VM set-up's compositions parse, shellcheck passes, and
+#                         their tests (tests/scripts.sh) pass
 #   ./check.sh image      the image built locally (no registry, no secrets) and smoke-tested
 #   ./check.sh all        both
 #
@@ -16,7 +17,8 @@ scripts() {
     # shellcheck disable=SC2086 # the list is the files, split on purpose
     if ! cat $parts | sh -n; then echo "check: the VM set-up doesn't parse as $parts" >&2; return 1; fi
   done
-  shellcheck check.sh player-account.sh smoke-test.sh
+  shellcheck check.sh player-account.sh smoke-test.sh tests/scripts.sh
+  tests/scripts.sh
   echo "check: scripts ok"
 }
 

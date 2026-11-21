@@ -36,7 +36,7 @@ else
 fi
 if ! contains "$kali" '-o "$d/key"' || contains "$kali" "-o /usr/share/keyrings"; then fail "kali.sh: the keyring is downloaded into the private folder"; fi
 
-# --- vm/toolset.sh: Kali's toolset only where the box lacks it -------------------------------
+# --- vm/toolset.sh: nothing on Kali's own box, a small fixed set elsewhere -------------------
 toolset_calls() { # $1: dpkg-query's answer for the toolset
   local dir="$tmp/toolset-$RANDOM"
   stub "$dir" dpkg-query "#!/bin/sh
@@ -47,9 +47,14 @@ echo \"\$*\" >> '$dir/calls'"
   cat "$dir/calls" 2>/dev/null || true
 }
 if [ -z "$(toolset_calls 'install ok installed')" ]; then ok "a box with the toolset takes nothing from the archive"; else fail "toolset.sh: a box with the toolset called apt-get"; fi
-want=$'update\ninstall -y kali-linux-headless'
 got="$(toolset_calls '')"
-if [ "$got" = "$want" ]; then ok "a box without the toolset is given it"; else fail "toolset.sh: without the toolset: got [$got], want [$want]"; fi
+first="$(printf '%s\n' "$got" | head -1)"
+install="$(printf '%s\n' "$got" | sed -n 2p)"
+if [ "$first" = update ] && contains "$install" 'install -y kali-linux-core nmap' && contains "$install" ' sqlmap ' && ! contains "$install" kali-linux-headless; then
+  ok "a box without Kali's toolset (Debian made Kali, on Arm) is given the small set, not all of it"
+else
+  fail "toolset.sh: without the toolset: got [$got]"
+fi
 
 # --- player-account.sh: the account, its sudo, its password, the shared folder's group -------
 account="$(cat player-account.sh)"

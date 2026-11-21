@@ -16,7 +16,9 @@ The launcher assembles one `sh` script from these parts, in this order:
 1. `vm/kali.sh`: on a Debian VM (where Kali has no image for the computer's CPU), Kali's archive
    in place of Debian's, its keyring checked against Kali's two archive keys before apt trusts it,
    keeping the VM's own kernel. It defines `$keep`, which the parts after it use.
-2. `vm/toolset.sh`: Kali's headless toolset, unless the box has it already.
+2. `vm/toolset.sh`: nothing where the box has Kali's toolset (Kali's own box, amd64); elsewhere (a
+   Debian VM made Kali, on Arm) a small set, the same for every lab: Kali's core and the common web,
+   network and password tools. The player installs more with `sudo apt install`.
 3. The player's account: `player-account.sh`, run by the launcher with the box's shared folder and
    password file.
 4. `vm/desktop.sh`, for a box with a desktop: XFCE, `player` signed in by LightDM, no screen lock.

@@ -53,13 +53,13 @@ request there.
 
 ## Verify the image
 
-Each architecture's image carries BuildKit's attestations (an SPDX SBOM of its packages and the
-SLSA provenance of its build), and the published multi-arch index a build provenance attestation
-signed through Sigstore and kept by GitHub. With the digest the launcher pins:
+Each architecture's image carries BuildKit's SLSA provenance of its build, and the published
+multi-arch index a build provenance attestation signed through Sigstore and kept by GitHub. There
+is no SBOM attestation: Kali's toolset makes one larger than BuildKit accepts. With the digest the
+launcher pins:
 
 ```sh
 PINNED=cyberctf/attack-box@sha256:...
-docker buildx imagetools inspect "$PINNED" --format '{{ json .SBOM }}'         # the SBOM
 docker buildx imagetools inspect "$PINNED" --format '{{ json .Provenance }}'   # BuildKit's provenance
 gh attestation verify "oci://index.docker.io/$PINNED" --repo CyberCTF/attack-box \
   --signer-workflow CyberCTF/attack-box/.github/workflows/image.yml           # built by image.yml here

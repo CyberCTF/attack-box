@@ -8,8 +8,8 @@ name: Attack box image
 # never reaches players. The launcher doesn't follow `latest`: it pins the image by digest, with
 # this repository's files as they were at the commit that published it. Once a publish is out, the
 # pushed digest is pulled and smoke-tested again on both architectures, then the `pin` job opens a
-# pull request into the launcher's dev with both. Each architecture's image carries BuildKit's SBOM
-# and provenance attestations, and the published index a GitHub build provenance attestation
+# pull request into the launcher's dev with both. Each architecture's image carries BuildKit's
+# provenance attestation, and the published index a GitHub build provenance attestation
 # (README.md, "Verify the image").
 on:
   pull_request:
@@ -83,9 +83,10 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          # BuildKit's attestations, pushed with the image: an SPDX SBOM of its packages and the
-          # full SLSA provenance of its build (the repository has no build secrets to leak).
-          sbom: true
+          # BuildKit's full SLSA provenance of the build, pushed with the image (the repository has
+          # no build secrets to leak). No SBOM attestation: Kali's toolset makes an SPDX SBOM larger
+          # than the 80 MiB BuildKit accepts, and the export fails.
+          sbom: false
           provenance: mode=max
       - run: |
           set -euo pipefail
